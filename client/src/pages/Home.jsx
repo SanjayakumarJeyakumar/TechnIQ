@@ -1,7 +1,17 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Home() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+  }
+
   return (
     <div>
       <section style={{
@@ -14,8 +24,10 @@ export default function Home() {
           {profile?.name ? `Welcome back, ${profile.name.split(' ')[0]}. ` : ''}
           Find students from your college who can help you learn the skills you care about.
         </p>
-        <div style={{ marginTop: 'var(--sp-4)' }}>
+        <form onSubmit={handleSubmit} style={{ marginTop: 'var(--sp-4)' }}>
           <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="What do you want to learn?"
             style={{
               width: '100%', maxWidth: 420, padding: 'var(--sp-3) var(--sp-4)',
@@ -23,10 +35,10 @@ export default function Home() {
               fontSize: 'var(--text-base)',
             }}
           />
-        </div>
+        </form>
       </section>
       <p style={{ color: 'var(--ink-500)', fontSize: 'var(--text-sm)' }}>
-        Recommended students, popular skills, and the leaderboard render here in Phase 5–9.
+        Recommended students, popular skills, and the leaderboard render here in Phase 9.
       </p>
     </div>
   )
