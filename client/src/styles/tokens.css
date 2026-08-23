@@ -1,0 +1,116 @@
+/* ============================================================================
+   TechnIQ design tokens
+   Direction: a college notice-board crossed with a product, not a generic
+   SaaS dashboard. Paper-toned surface, near-black ink, one confident accent
+   ("signal violet" — a request being sent/answered) and one warm accent
+   reserved for teaching/helping moments (accepted requests, leaderboard).
+   Display face is Space Grotesk (geometric, a little technical, used only
+   for headings/nav/logo); body is Inter. No border-radius-zero broadsheet
+   look, no cream+terracotta, no near-black+neon — picked deliberately
+   against those defaults.
+   ============================================================================ */
+
+:root {
+  /* Surfaces */
+  --surface-0: #FAF9F6;   /* page background — warm paper, not stark white */
+  --surface-1: #FFFFFF;   /* cards */
+  --surface-2: #F1EFE9;   /* recessed/hover surface */
+  --surface-inverse: #16151C;
+
+  /* Ink */
+  --ink-900: #16151C;
+  --ink-700: #46454E;
+  --ink-500: #77767E;
+  --ink-300: #C7C5BC;
+  --ink-100: #E7E5DD;
+
+  /* Signal violet — primary action, requests, links */
+  --violet-50:  #EFEDFC;
+  --violet-100: #D9D4F8;
+  --violet-400: #6E5EF0;
+  --violet-600: #4E3EDB;
+  --violet-800: #33279B;
+
+  /* Warm amber — teaching / accepted / helped */
+  --amber-50:  #FBF0DD;
+  --amber-100: #F5DDAB;
+  --amber-400: #E0A339;
+  --amber-600: #B9801E;
+  --amber-800: #7A5411;
+
+  /* Status */
+  --success: #2E8B57;
+  --success-bg: #E6F3EB;
+  --danger: #C4432B;
+  --danger-bg: #FBEAE6;
+
+  /* Typography */
+  --font-display: 'Space Grotesk', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 13.5px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: 26px;
+  --text-2xl: 34px;
+
+  /* Spacing (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+
+  /* Elevation — kept subtle, no glassmorphism */
+  --shadow-sm: 0 1px 2px rgba(22, 21, 28, 0.06);
+  --shadow-md: 0 4px 16px rgba(22, 21, 28, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-0: #131217;
+    --surface-1: #1B1A21;
+    --surface-2: #24232B;
+    --surface-inverse: #FAF9F6;
+
+    --ink-900: #F3F2ED;
+    --ink-700: #C7C5BC;
+    --ink-500: #918F88;
+    --ink-300: #3E3D45;
+    --ink-100: #26252C;
+
+    --violet-50: #221F3B;
+    --violet-100: #33297A;
+    --violet-400: #8578F5;
+    --violet-600: #A79BFF;
+    --violet-800: #D9D4F8;
+
+    --amber-50: #2E2412;
+    --amber-100: #4A3A17;
+    --amber-400: #E5AE4E;
+    --amber-600: #F0C579;
+    --amber-800: #F7DFAE;
+
+    --success-bg: #16261D;
+    --danger-bg: #2C1712;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+}
