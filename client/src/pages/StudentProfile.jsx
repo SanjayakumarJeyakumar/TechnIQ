@@ -5,6 +5,7 @@ import { fetchStudentProfile } from '../services/students'
 import SkillBadge from '../components/SkillBadge'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
+import RequestHelpModal from '../components/RequestHelpModal'
 
 export default function StudentProfile() {
   const { studentId } = useParams()
@@ -13,6 +14,8 @@ export default function StudentProfile() {
 
   const [student, setStudent] = useState(null)
   const [status, setStatus] = useState('loading') // loading | done | error
+  const [showRequestModal, setShowRequestModal] = useState(false)
+  const [sentConfirmation, setSentConfirmation] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -107,19 +110,50 @@ export default function StudentProfile() {
           </div>
         )}
 
-        <button
-          disabled
-          title="Learning requests are wired up in the next phase"
-          style={{
-            width: '100%', padding: 'var(--sp-3) var(--sp-4)',
-            background: 'var(--ink-100)', color: 'var(--ink-500)',
-            border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 500,
-            cursor: 'not-allowed',
-          }}
-        >
-          Request Help — coming next phase
-        </button>
+        {sentConfirmation ? (
+          <div style={{
+            padding: 'var(--sp-4)', background: 'var(--success-bg)', borderRadius: 'var(--radius-md)',
+            color: 'var(--success)', fontSize: 'var(--text-sm)', fontWeight: 500, textAlign: 'center',
+          }}>
+            Request sent — {student.name.split(' ')[0]} will get a notification.
+          </div>
+        ) : student.can_teach && student.skills.length > 0 ? (
+          <button
+            onClick={() => setShowRequestModal(true)}
+            style={{
+              width: '100%', padding: 'var(--sp-3) var(--sp-4)',
+              background: 'var(--violet-600)', color: '#fff',
+              border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 500,
+            }}
+          >
+            Request Help
+          </button>
+        ) : (
+          <button
+            disabled
+            style={{
+              width: '100%', padding: 'var(--sp-3) var(--sp-4)',
+              background: 'var(--ink-100)', color: 'var(--ink-500)',
+              border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 500,
+              cursor: 'not-allowed',
+            }}
+          >
+            Not currently accepting requests
+          </button>
+        )}
       </div>
+
+      {showRequestModal && (
+        <RequestHelpModal
+          student={student}
+          skills={student.skills}
+          onClose={() => setShowRequestModal(false)}
+          onSent={() => {
+            setShowRequestModal(false)
+            setSentConfirmation(true)
+          }}
+        />
+      )}
     </div>
   )
 }
