@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { fetchStudentProfile } from '../services/students'
+import { fetchStudentProfile, fetchStudentEndorsements } from '../services/students'
 import { blockUser, unblockUser, checkBlockStatus, reportUser } from '../services/safety'
+import { ENDORSEMENT_MAP } from '../constants/endorsements'
 import SkillBadge from '../components/SkillBadge'
 import EmptyState from '../components/EmptyState'
 import RequestHelpModal from '../components/RequestHelpModal'
@@ -17,6 +18,7 @@ export default function StudentProfile() {
   const navigate = useNavigate()
 
   const [student, setStudent] = useState(null)
+  const [endorsements, setEndorsements] = useState([])
   const [status, setStatus] = useState('loading') // loading | done | error
   const [isBlocked, setIsBlocked] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -30,27 +32,28 @@ export default function StudentProfile() {
   const [helpedConfirmation, setHelpedConfirmation] = useState(null)
   const [safetyMessage, setSafetyMessage] = useState(null)
 
-  useEffect(() => {
-    let cancelled = false
-    setStatus('loading')
-
+  const loadData = useCallback(async () => {
     if (!targetId) return
-
-    Promise.all([fetchStudentProfile(targetId), checkBlockStatus(targetId)])
-      .then(([profileData, blocked]) => {
-        if (cancelled) return
-        setStudent(profileData)
-        setIsBlocked(blocked)
-        setStatus('done')
-      })
-      .catch((err) => {
-        if (cancelled) return
-        console.error('Failed to load student profile:', err)
-        setStatus('error')
-      })
-
-    return () => { cancelled = true }
+    setStatus('loading')
+    try {
+      const [profileData, blocked, endorsementData] = await Promise.all([
+        fetchStudentProfile(targetId),
+        checkBlockStatus(targetId),
+        fetchStudentEndorsements(targetId),
+      ])
+      setStudent(profileData)
+      setIsBlocked(blocked)
+      setEndorsements(endorsementData)
+      setStatus('done')
+    } catch (err) {
+      console.error('Failed to load student profile:', err)
+      setStatus('error')
+    }
   }, [targetId])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   // Viewing your own card via a direct link — send to real profile page
   if (user?.id === targetId) {
@@ -76,6 +79,7 @@ export default function StudentProfile() {
   }
 
   const initial = (student.name || '?').trim().charAt(0).toUpperCase()
+  const activeEndorsements = endorsements.filter((e) => Number(e.count) > 0)
 
   const handleConfirmBlock = async () => {
     await blockUser(student.id)
@@ -324,7 +328,7 @@ export default function StudentProfile() {
           </div>
         )}
 
-        {/* Statistics Banner */}
+        {/* Statistics Banner with Reputation Summary */}
         <div style={{
           display: 'flex',
           gap: 'var(--sp-4)',
@@ -336,6 +340,9 @@ export default function StudentProfile() {
           flexWrap: 'wrap',
         }}>
           <Stat label="Students helped" value={`★ ${student.students_helped}`} color="var(--amber-800)" />
+          {activeEndorsements.length > 0 && (
+            <Stat label="Peer strengths" value={`🏆 ${activeEndorsements.length}`} color="var(--brand-primary)" />
+          )}
           <Stat label="Skills listed" value={student.skills.length} color="#FFFFFF" />
           <Stat
             label="Teaching status"
@@ -344,10 +351,56 @@ export default function StudentProfile() {
           />
         </div>
 
+        {/* Peer Feedback / Endorsements Section */}
+        {activeEndorsements.length > 0 && (
+          <div style={{ marginBottom: 'var(--sp-6)' }}>
+            <h3 style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 'var(--sp-2)' }}>
+              Peer Feedback ({activeEndorsements.reduce((acc, curr) => acc + Number(curr.count), 0)})
+            </h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
+              {activeEndorsements.map((e) => {
+                const meta = ENDORSEMENT_MAP[e.tag]
+                if (!meta) return null
+                return (
+                  <div
+                    key={e.tag}
+                    title={meta.description}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 12px',
+                      borderRadius: 'var(--radius-pill)',
+                      background: 'var(--surface-2)',
+                      border: '1px solid var(--surface-3)',
+                      color: '#FFFFFF',
+                      fontSize: 'var(--text-xs)',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span>{meta.icon}</span>
+                    <span>{meta.label}</span>
+                    <span style={{
+                      padding: '1px 6px',
+                      borderRadius: 'var(--radius-pill)',
+                      background: 'var(--brand-subtle)',
+                      color: 'var(--brand-primary)',
+                      fontWeight: 700,
+                      fontSize: '11px',
+                    }}>
+                      {e.count}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Skills Section */}
         {student.skills.length > 0 && (
           <div style={{ marginBottom: 'var(--sp-6)' }}>
-            <h3 style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-500)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 'var(--sp-2)' }}>
+            <h3 style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 'var(--sp-2)' }}>
               Skills & Expertise
             </h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
@@ -371,7 +424,8 @@ export default function StudentProfile() {
             textAlign: 'center',
             marginBottom: 'var(--sp-4)',
           }}>
-            ✓ Thanks! You confirmed {student.name.split(' ')[0]} helped you learn {helpedConfirmation.skill_name || 'a skill'}.
+            ✓ Thanks! You confirmed {student.name.split(' ')[0]} helped you learn {helpedConfirmation.skill_name || 'a skill'}
+            {helpedConfirmation.endorsements_count > 0 ? ` and endorsed ${helpedConfirmation.endorsements_count} peer strength(s)!` : '!'}
           </div>
         )}
 
@@ -459,6 +513,8 @@ export default function StudentProfile() {
             if (res.students_helped !== undefined) {
               setStudent((prev) => ({ ...prev, students_helped: res.students_helped }))
             }
+            // Reload endorsements to show updated strengths immediately
+            fetchStudentEndorsements(student.id).then(setEndorsements).catch(() => {})
           }}
         />
       )}

@@ -29,15 +29,36 @@ export async function fetchStudentProfile(studentId) {
 
 /**
  * Calls the secure database RPC `record_student_helped` to verify same-college
- * membership, validate the skill, record peer help, and safely increment
- * the helper's students_helped counter without allowing client-side manipulation.
+ * membership, validate the skill, record peer help, attach optional endorsements,
+ * and safely increment the helper's students_helped counter.
  */
-export async function recordStudentHelped(helperId, skillId) {
+export async function recordStudentHelped(helperId, skillId, tags = []) {
   const { data, error } = await supabase.rpc('record_student_helped', {
     p_helper_id: helperId,
     p_skill_id: skillId,
+    p_tags: Array.isArray(tags) ? tags : [],
   })
 
   if (error) throw error
   return data
+}
+
+/**
+ * Fetches aggregated peer endorsement counts for a student.
+ */
+export async function fetchStudentEndorsements(studentId) {
+  if (!studentId) return []
+  try {
+    const { data, error } = await supabase.rpc('fetch_student_endorsements', {
+      p_user_id: studentId,
+    })
+    if (error) {
+      console.warn('fetch_student_endorsements RPC notice:', error)
+      return []
+    }
+    return Array.isArray(data) ? data : []
+  } catch (err) {
+    console.warn('fetchStudentEndorsements exception:', err)
+    return []
+  }
 }
