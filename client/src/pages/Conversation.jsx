@@ -87,7 +87,19 @@ export default function Conversation() {
           ←
         </button>
         {otherUser && (
-          <>
+          <button
+            type="button"
+            onClick={() => navigate(`/students/${otherUser.id}`)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 'var(--sp-3)',
+              background: 'none', border: 'none', padding: 'var(--sp-1) var(--sp-2)',
+              borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'left',
+              transition: 'background var(--dur-fast) var(--ease-out)',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+            title="View student profile"
+          >
             <div style={{
               width: 36, height: 36, borderRadius: '50%', background: 'var(--violet-50)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
@@ -100,8 +112,11 @@ export default function Conversation() {
                 </span>
               )}
             </div>
-            <h2 style={{ fontSize: 'var(--text-md)', margin: 0 }}>{otherUser.name}</h2>
-          </>
+            <div>
+              <h2 style={{ fontSize: 'var(--text-md)', margin: 0, color: 'var(--ink-900)' }}>{otherUser.name}</h2>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--violet-600)' }}>View profile →</span>
+            </div>
+          </button>
         )}
       </div>
 

@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { fetchUnreadNotificationCount, subscribeToNotifications } from '../services/notifications'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
@@ -10,7 +12,33 @@ const NAV_LINKS = [
 ]
 
 export default function Navbar() {
-  const { profile, signOut } = useAuth()
+  const { profile, user, signOut } = useAuth()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user?.id) return
+
+    let cancelled = false
+    const refreshCount = () => {
+      fetchUnreadNotificationCount(user.id)
+        .then((count) => {
+          if (!cancelled) setUnreadCount(count)
+        })
+        .catch((err) => {
+          console.error('Failed to load notification count:', err)
+        })
+    }
+
+    refreshCount()
+    const unsubscribe = subscribeToNotifications(user.id, () => {
+      refreshCount()
+    })
+
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [user?.id])
 
   return (
     <header style={{
@@ -50,9 +78,42 @@ export default function Navbar() {
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-          <NavLink to="/notifications" aria-label="Notifications" style={{ color: 'var(--ink-700)' }}>
+          <NavLink
+            to="/notifications"
+            aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+            style={{
+              color: 'var(--ink-700)',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+            }}
+          >
             <BellIcon />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: 2,
+                right: 2,
+                minWidth: 16,
+                height: 16,
+                borderRadius: 'var(--radius-pill)',
+                background: 'var(--danger, #EF4444)',
+                color: '#fff',
+                fontSize: '10px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 4px',
+                border: '2px solid var(--surface-1)',
+              }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </NavLink>
+
           <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', textDecoration: 'none' }}>
             <Avatar name={profile?.name} url={profile?.avatar_url} />
           </NavLink>

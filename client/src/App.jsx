@@ -57,6 +57,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />
         <Route path="/students/:studentId" element={<StudentProfile />} />
+        <Route path="/profile/:studentId" element={<StudentProfile />} />
         <Route path="/requests" element={<Requests />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/messages/:conversationId" element={<Conversation />} />

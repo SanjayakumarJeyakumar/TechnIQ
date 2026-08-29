@@ -28,3 +28,19 @@ export async function fetchStudentProfile(studentId) {
     skills: skillRows.map((row) => row.skills),
   }
 }
+
+/**
+ * Calls the secure database RPC `record_student_helped` to verify same-college
+ * membership, validate the skill, record peer help, and safely increment
+ * the helper's students_helped counter without allowing client-side manipulation.
+ */
+export async function recordStudentHelped(helperId, skillId) {
+  const { data, error } = await supabase.rpc('record_student_helped', {
+    p_helper_id: helperId,
+    p_skill_id: skillId,
+  })
+
+  if (error) throw error
+  return data
+}
+
