@@ -1,5 +1,7 @@
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+
 export async function getAIGuidance(skills, prompt, accessToken) {
-  const response = await fetch('/api/ai/guide', {
+  const response = await fetch(`${API_BASE}/api/ai/guide`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
