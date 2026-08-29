@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -7,7 +7,6 @@ import {
   markAllNotificationsRead,
   subscribeToNotifications,
 } from '../services/notifications'
-import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 
 const TYPE_CONFIG = {
@@ -15,29 +14,29 @@ const TYPE_CONFIG = {
     icon: '📩',
     label: 'Learning Request',
     targetRoute: '/requests',
-    color: 'var(--amber-800)',
-    bg: 'var(--amber-50)',
+    color: '#F59E0B',
+    bg: 'rgba(245, 158, 11, 0.15)',
   },
   request_accepted: {
     icon: '🎉',
     label: 'Request Accepted',
     targetRoute: '/messages',
-    color: 'var(--success)',
-    bg: 'var(--success-bg)',
+    color: '#10B981',
+    bg: 'rgba(16, 185, 129, 0.15)',
   },
   request_rejected: {
     icon: '✕',
     label: 'Request Declined',
     targetRoute: '/requests',
-    color: 'var(--danger)',
-    bg: 'var(--danger-bg)',
+    color: '#EF4444',
+    bg: 'rgba(239, 68, 68, 0.15)',
   },
   new_message: {
     icon: '💬',
     label: 'New Message',
     targetRoute: '/messages',
-    color: 'var(--violet-600)',
-    bg: 'var(--violet-50)',
+    color: '#0EA5E9',
+    bg: 'rgba(14, 165, 233, 0.15)',
   },
 }
 
@@ -47,40 +46,61 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState([])
   const [status, setStatus] = useState('loading') // loading | done | error
   const [markingAll, setMarkingAll] = useState(false)
+  const isMounted = useRef(true)
 
-  const loadNotifications = async (showLoading = true) => {
-    if (!user) return
+  useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
+
+  const loadNotifications = useCallback(async (showLoading = true) => {
+    if (!user?.id) return
     if (showLoading) setStatus('loading')
+
     try {
       const data = await fetchNotifications(user.id)
-      setNotifications(data)
-      setStatus('done')
+      if (isMounted.current) {
+        setNotifications(Array.isArray(data) ? data : [])
+        setStatus('done')
+      }
     } catch (err) {
       console.error('Failed to load notifications:', err)
-      setStatus('error')
+      if (isMounted.current) {
+        setStatus('error')
+      }
     }
-  }
+  }, [user?.id])
 
   useEffect(() => {
     loadNotifications(true)
 
     if (!user?.id) return
     const unsubscribe = subscribeToNotifications(user.id, () => {
-      loadNotifications(false)
+      if (isMounted.current) {
+        loadNotifications(false)
+      }
     })
 
-    return () => unsubscribe()
-  }, [user?.id])
+    return () => {
+      unsubscribe()
+    }
+  }, [user?.id, loadNotifications])
 
   const handleNotificationClick = async (notif) => {
-    if (!notif.is_read) {
+    if (!notif) return
+
+    if (!notif.is_read && notif.id) {
       try {
         await markNotificationRead(notif.id)
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
-        )
+        if (isMounted.current) {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
+          )
+        }
       } catch (err) {
-        console.error('Failed to mark read:', err)
+        console.warn('Failed to mark read:', err)
       }
     }
 
@@ -89,125 +109,146 @@ export default function Notifications() {
   }
 
   const handleMarkAllRead = async () => {
-    if (!user || markingAll) return
+    if (!user?.id || markingAll) return
     setMarkingAll(true)
     try {
       await markAllNotificationsRead(user.id)
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      if (isMounted.current) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      }
     } catch (err) {
       console.error('Failed to mark all read:', err)
     } finally {
-      setMarkingAll(false)
+      if (isMounted.current) {
+        setMarkingAll(false)
+      }
     }
   }
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length
-
-  if (status === 'loading') {
-    return (
-      <div style={{ padding: 'var(--sp-6) 0' }}>
-        <LoadingSpinner label="Loading notifications…" />
-      </div>
-    )
-  }
-
-  if (status === 'error') {
-    return (
-      <EmptyState
-        title="Couldn't load notifications"
-        description="Please check your connection and try again."
-        action={
-          <button
-            onClick={() => loadNotifications(true)}
-            style={{
-              padding: 'var(--sp-2) var(--sp-4)', background: 'var(--violet-600)',
-              color: '#fff', border: 'none', borderRadius: 'var(--radius-md)',
-              fontSize: 'var(--text-sm)', fontWeight: 500, cursor: 'pointer',
-            }}
-          >
-            Retry
-          </button>
-        }
-      />
-    )
-  }
+  const safeNotifications = Array.isArray(notifications) ? notifications : []
+  const unreadCount = safeNotifications.filter((n) => Boolean(n && !n.is_read)).length
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto' }}>
+    <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
       {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: 'var(--sp-4)',
+        flexWrap: 'wrap', gap: 'var(--sp-2)',
       }}>
         <div>
-          <h1 style={{ fontSize: 'var(--text-xl)', margin: 0 }}>Notifications</h1>
+          <h1 style={{ fontSize: 'var(--text-2xl)', color: '#FFFFFF', margin: 0 }}>Notifications</h1>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-500)', margin: 'var(--sp-1) 0 0 0' }}>
-            {unreadCount > 0
-              ? `${unreadCount} unread update${unreadCount === 1 ? '' : 's'}`
-              : 'You are all caught up!'}
+            {status === 'loading'
+              ? 'Checking for campus updates…'
+              : unreadCount > 0
+                ? `${unreadCount} unread update${unreadCount === 1 ? '' : 's'}`
+                : 'You are all caught up!'}
           </p>
         </div>
 
-        {unreadCount > 0 && (
+        {status === 'done' && unreadCount > 0 && (
           <button
             onClick={handleMarkAllRead}
             disabled={markingAll}
-            style={{
-              background: 'none', border: '1px solid var(--ink-100)',
-              padding: 'var(--sp-2) var(--sp-3)', borderRadius: 'var(--radius-md)',
-              fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--violet-600)',
-              cursor: markingAll ? 'not-allowed' : 'pointer',
-            }}
+            className="btn-secondary"
+            style={{ padding: '6px 14px', height: 34, fontSize: 'var(--text-xs)' }}
           >
             {markingAll ? 'Marking…' : 'Mark all as read'}
           </button>
         )}
       </div>
 
-      {/* Notification List */}
-      {notifications.length === 0 ? (
+      {/* Loading State */}
+      {status === 'loading' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="skeleton" style={{ height: 74, borderRadius: 'var(--radius-lg)' }} />
+          ))}
+        </div>
+      )}
+
+      {/* Error State with Retry Button */}
+      {status === 'error' && (
+        <EmptyState
+          title="Unable to load notifications"
+          description="We could not fetch your campus notifications right now. Please check your connection."
+          action={
+            <button
+              onClick={() => loadNotifications(true)}
+              className="btn-brand-primary"
+              style={{ marginTop: 'var(--sp-3)', padding: '0 20px', height: 40 }}
+            >
+              Retry
+            </button>
+          }
+        />
+      )}
+
+      {/* Empty State */}
+      {status === 'done' && safeNotifications.length === 0 && (
         <EmptyState
           title="No notifications yet"
           description="When someone sends you a learning request, accepts an invite, or chats, you'll see it here."
         />
-      ) : (
+      )}
+
+      {/* Notifications List */}
+      {status === 'done' && safeNotifications.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-          {notifications.map((notif) => {
+          {safeNotifications.map((notif) => {
+            if (!notif || !notif.id) return null
+
             const config = TYPE_CONFIG[notif.type] || {
               icon: '🔔',
-              label: 'Notification',
+              label: 'Update',
               targetRoute: '/requests',
-              color: 'var(--ink-900)',
-              bg: 'var(--surface-2)',
+              color: '#00C16A',
+              bg: 'rgba(0, 193, 106, 0.15)',
             }
+
+            const safeDate = notif.created_at ? new Date(notif.created_at) : new Date()
+            const timeFormatted = isNaN(safeDate.getTime())
+              ? 'Recently'
+              : safeDate.toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })
 
             return (
               <div
                 key={notif.id}
                 onClick={() => handleNotificationClick(notif)}
                 style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 'var(--sp-3)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 'var(--sp-3)',
                   padding: 'var(--sp-4)',
-                  background: notif.is_read ? 'var(--surface-1)' : 'var(--surface-0)',
-                  border: '1px solid var(--ink-100)',
-                  borderLeft: notif.is_read ? '1px solid var(--ink-100)' : '4px solid var(--violet-600)',
-                  borderRadius: 'var(--radius-md)',
+                  background: notif.is_read ? 'var(--surface-1)' : 'rgba(0, 193, 106, 0.05)',
+                  border: '1px solid var(--surface-3)',
+                  borderLeft: notif.is_read ? '1px solid var(--surface-3)' : '4px solid var(--brand-primary)',
+                  borderRadius: 'var(--radius-lg)',
                   cursor: 'pointer',
-                  transition: 'background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out)',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all var(--dur-fast) var(--ease-out)',
                 }}
                 onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--brand-primary)'
                   e.currentTarget.style.transform = 'translateY(-1px)'
                 }}
                 onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--surface-3)'
+                  e.currentTarget.style.borderLeft = notif.is_read ? '1px solid var(--surface-3)' : '4px solid var(--brand-primary)'
                   e.currentTarget.style.transform = 'none'
                 }}
               >
                 {/* Type Icon Badge */}
                 <div style={{
-                  width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                  width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
                   background: config.bg, color: config.color,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem',
+                  fontSize: '1.1rem',
                 }}>
                   {config.icon}
                 </div>
@@ -216,29 +257,24 @@ export default function Notifications() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--sp-2)' }}>
                     <span style={{
-                      fontSize: 'var(--text-xs)', fontWeight: 600,
+                      fontSize: '11px', fontWeight: 700,
                       color: config.color, textTransform: 'uppercase', letterSpacing: '0.04em',
                     }}>
                       {config.label}
                     </span>
                     <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)' }}>
-                      {new Date(notif.created_at).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
+                      {timeFormatted}
                     </span>
                   </div>
 
                   <p style={{
                     margin: 'var(--sp-1) 0 0 0',
                     fontSize: 'var(--text-sm)',
-                    color: notif.is_read ? 'var(--ink-700)' : 'var(--ink-900)',
+                    color: notif.is_read ? 'var(--ink-700)' : '#FFFFFF',
                     fontWeight: notif.is_read ? 400 : 600,
                     lineHeight: 1.5,
                   }}>
-                    {notif.message}
+                    {notif.message || 'New activity on TechnIQ'}
                   </p>
                 </div>
 
@@ -246,7 +282,8 @@ export default function Notifications() {
                 {!notif.is_read && (
                   <div style={{
                     width: 8, height: 8, borderRadius: '50%',
-                    background: 'var(--violet-600)', flexShrink: 0, marginTop: 6,
+                    background: 'var(--brand-primary)', flexShrink: 0, marginTop: 6,
+                    boxShadow: '0 0 8px rgba(0, 193, 106, 0.8)',
                   }} />
                 )}
               </div>

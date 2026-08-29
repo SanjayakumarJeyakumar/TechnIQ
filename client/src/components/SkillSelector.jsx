@@ -1,11 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 
-/**
- * `allSkills`: [{ id, name, category }]
- * `selectedIds`: Set<string>
- * `onChange(nextSet)`: called with a new Set on every toggle
- */
 export default function SkillSelector({ allSkills, selectedIds, onChange }) {
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, 150)
@@ -42,6 +37,10 @@ export default function SkillSelector({ allSkills, selectedIds, onChange }) {
         <div style={{
           display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)',
           marginBottom: 'var(--sp-4)',
+          background: 'var(--surface-2)',
+          padding: 'var(--sp-3)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--surface-3)',
         }}>
           {selectedSkills.map((skill) => (
             <button
@@ -52,7 +51,7 @@ export default function SkillSelector({ allSkills, selectedIds, onChange }) {
               type="button"
             >
               {skill.name}
-              <span aria-hidden="true" style={{ marginLeft: 6, opacity: 0.7 }}>×</span>
+              <span aria-hidden="true" style={{ marginLeft: 6, opacity: 0.8, fontWeight: 700 }}>×</span>
             </button>
           ))}
         </div>
@@ -61,18 +60,14 @@ export default function SkillSelector({ allSkills, selectedIds, onChange }) {
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search skills — e.g. React, Python, UI Design…"
-        style={{
-          width: '100%', padding: 'var(--sp-3) var(--sp-4)',
-          border: '1px solid var(--ink-100)', borderRadius: 'var(--radius-md)',
-          fontSize: 'var(--text-base)', marginBottom: 'var(--sp-4)',
-          background: 'var(--surface-1)', color: 'var(--ink-900)',
-        }}
+        placeholder="Search skills (e.g. React, Python, UI Design, SQL)…"
+        className="input-dark"
+        style={{ marginBottom: 'var(--sp-4)' }}
       />
 
-      <div style={{ maxHeight: 320, overflowY: 'auto', paddingRight: 'var(--sp-1)' }}>
+      <div style={{ maxHeight: 280, overflowY: 'auto', paddingRight: 'var(--sp-1)' }}>
         {Object.keys(groupedResults).length === 0 && (
-          <p style={{ color: 'var(--ink-500)', fontSize: 'var(--text-sm)' }}>
+          <p style={{ color: 'var(--ink-500)', fontSize: 'var(--text-sm)', textAlign: 'center', padding: 'var(--sp-4)' }}>
             No skills match "{debouncedQuery}".
           </p>
         )}
@@ -80,8 +75,8 @@ export default function SkillSelector({ allSkills, selectedIds, onChange }) {
           <div key={category} style={{ marginBottom: 'var(--sp-4)' }}>
             <h4 style={{
               fontSize: 'var(--text-xs)', textTransform: 'uppercase',
-              letterSpacing: '0.04em', color: 'var(--ink-500)',
-              marginBottom: 'var(--sp-2)',
+              letterSpacing: '0.05em', color: 'var(--brand-primary)',
+              marginBottom: 'var(--sp-2)', fontWeight: 700,
             }}>
               {category}
             </h4>
@@ -95,7 +90,7 @@ export default function SkillSelector({ allSkills, selectedIds, onChange }) {
                     onClick={() => toggle(skill.id)}
                     style={chipStyle(isSelected)}
                   >
-                    {skill.name}
+                    {skill.name} {isSelected ? '✓' : '+'}
                   </button>
                 )
               })}
@@ -109,14 +104,16 @@ export default function SkillSelector({ allSkills, selectedIds, onChange }) {
 
 function chipStyle(selected) {
   return {
-    display: 'inline-flex', alignItems: 'center',
-    padding: 'var(--sp-1) var(--sp-3)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 12px',
     borderRadius: 'var(--radius-pill)',
-    border: `1px solid ${selected ? 'var(--violet-600)' : 'var(--ink-100)'}`,
-    background: selected ? 'var(--violet-50)' : 'var(--surface-1)',
-    color: selected ? 'var(--violet-800)' : 'var(--ink-700)',
-    fontSize: 'var(--text-sm)',
-    fontWeight: selected ? 500 : 400,
+    border: selected ? '1px solid var(--brand-primary)' : '1px solid var(--surface-3)',
+    background: selected ? 'var(--brand-primary)' : 'var(--surface-2)',
+    color: selected ? '#0F1115' : 'var(--ink-700)',
+    fontSize: 'var(--text-xs)',
+    fontWeight: selected ? 700 : 500,
+    cursor: 'pointer',
     transition: 'all var(--dur-fast) var(--ease-out)',
   }
 }

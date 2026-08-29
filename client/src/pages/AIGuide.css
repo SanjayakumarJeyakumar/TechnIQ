@@ -1,6 +1,7 @@
 /* ============================================================================
-   TechnIQ AI Guide - Modern Dark Tutor Chat Interface
-   Scoped styling to guarantee high-contrast, accessible readability
+   TechnIQ AI Guide — Cohesive Dark Theme System
+   App Background: Charcoal (#0F1115) | Surface: #1A1D22 | Secondary: #242930
+   Border: #2A2F36 | Primary Action: #00C16A | AI Accent: #7C3AED
    ============================================================================ */
 
 .ai-guide-page {
@@ -26,20 +27,20 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.85rem;
-  background: rgba(110, 94, 240, 0.15);
-  border: 1px solid rgba(133, 120, 245, 0.4);
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.4);
   border-radius: 9999px;
-  color: #C7D2FE;
+  color: #C4B5FD;
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .ai-guide-title {
-  font-family: var(--font-display, 'Space Grotesk', sans-serif);
+  font-family: var(--font-display, 'Inter', sans-serif);
   font-size: 2rem;
   font-weight: 700;
-  color: #F9FAFB !important;
+  color: #FFFFFF !important;
   margin: 0;
   letter-spacing: -0.02em;
 }
@@ -64,7 +65,7 @@
 .ai-guide-skills-label {
   font-size: 0.8125rem;
   color: #9CA3AF !important;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0;
@@ -78,9 +79,9 @@
 }
 
 .ai-guide-skill-chip {
-  background: #201E2D;
-  border: 1px solid #36334D;
-  color: #D1D5DB !important;
+  background: #242930;
+  border: 1px solid #2A2F36;
+  color: #E5E7EB !important;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.8125rem;
@@ -89,19 +90,19 @@
 }
 
 .ai-guide-skill-chip:hover {
-  border-color: #6E5EF0;
+  border-color: #00C16A;
   color: #FFFFFF !important;
 }
 
 /* Main Chat Panel */
 .ai-guide-card {
-  background: #181722;
-  border: 1px solid #2B283C;
+  background: #1A1D22;
+  border: 1px solid #2A2F36;
   border-radius: 1rem;
   display: flex;
   flex-direction: column;
   height: 600px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
@@ -131,18 +132,18 @@
   width: 48px;
   height: 48px;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #6E5EF0 0%, #4E3EDB 100%);
+  background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #FFFFFF;
-  box-shadow: 0 4px 16px rgba(110, 94, 240, 0.4);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
 }
 
 .ai-guide-welcome-text h3 {
   font-size: 1.25rem;
-  font-weight: 600;
-  color: #F9FAFB !important;
+  font-weight: 700;
+  color: #FFFFFF !important;
   margin: 0 0 0.5rem 0;
 }
 
@@ -169,8 +170,8 @@
 }
 
 .ai-guide-starter-card {
-  background: #211F2E;
-  border: 1px solid #333049;
+  background: #242930;
+  border: 1px solid #2A2F36;
   border-radius: 0.75rem;
   padding: 1rem;
   text-align: left;
@@ -183,10 +184,10 @@
 }
 
 .ai-guide-starter-card:hover {
-  background: #2A273D;
-  border-color: #6E5EF0;
+  background: #2A2F36;
+  border-color: #00C16A;
   transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(110, 94, 240, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 193, 106, 0.2);
 }
 
 .ai-guide-starter-icon {
@@ -197,7 +198,7 @@
 .ai-guide-starter-prompt-text {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #F3F4F6 !important;
+  color: #E5E7EB !important;
   line-height: 1.4;
   margin: 0;
 }
@@ -211,15 +212,15 @@
 }
 
 .ai-avatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: #29273D;
-  border: 1px solid #454160;
+  background: rgba(124, 58, 237, 0.2);
+  border: 1.5px solid #7C3AED;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #A79BFF;
+  color: #C4B5FD;
   flex-shrink: 0;
 }
 
@@ -239,24 +240,24 @@
 
 .ai-author-name {
   font-weight: 600;
-  color: #C7D2FE !important;
+  color: #C4B5FD !important;
 }
 
 .ai-message-time {
-  color: #6B7280 !important;
+  color: #9CA3AF !important;
 }
 
 .ai-bubble-assistant {
-  background: #222030;
-  border: 1px solid #34314A;
+  background: #242930;
+  border: 1px solid #2A2F36;
   border-radius: 0.25rem 1rem 1rem 1rem;
   padding: 1rem 1.25rem;
-  color: #F3F4F6 !important;
+  color: #FFFFFF !important;
   font-size: 0.9375rem;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .ai-bubble-assistant strong, 
@@ -275,27 +276,28 @@
 }
 
 .ai-bubble-user {
-  background: #6E5EF0;
+  background: #00C16A;
   border-radius: 1rem 1rem 0.25rem 1rem;
   padding: 0.75rem 1.15rem;
-  color: #FFFFFF !important;
+  color: #0F1115 !important;
+  font-weight: 500;
   font-size: 0.9375rem;
   line-height: 1.5;
   max-width: 80%;
   word-break: break-word;
-  box-shadow: 0 4px 14px rgba(110, 94, 240, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 193, 106, 0.3);
 }
 
 .user-message-time {
   font-size: 0.75rem;
-  color: #6B7280 !important;
+  color: #9CA3AF !important;
   padding-right: 0.25rem;
 }
 
 /* Thinking Indicator */
 .ai-thinking-bubble {
-  background: #222030;
-  border: 1px solid #34314A;
+  background: #242930;
+  border: 1px solid #2A2F36;
   border-radius: 0.25rem 1rem 1rem 1rem;
   padding: 0.75rem 1.15rem;
   display: inline-flex;
@@ -313,7 +315,7 @@
 .ai-dot-pulse span {
   width: 6px;
   height: 6px;
-  background-color: #8578F5;
+  background-color: #00C16A;
   border-radius: 50%;
   display: inline-block;
   animation: ai-pulse 1.4s infinite ease-in-out both;
@@ -330,7 +332,7 @@
 
 /* Error Banner */
 .ai-guide-error-banner {
-  background: rgba(220, 38, 38, 0.15);
+  background: rgba(239, 68, 68, 0.15);
   border-top: 1px solid rgba(239, 68, 68, 0.3);
   padding: 0.65rem 1.25rem;
   color: #FCA5A5 !important;
@@ -342,8 +344,8 @@
 
 /* Footer / Input Container */
 .ai-guide-input-container {
-  background: #14131D;
-  border-top: 1px solid #2B283C;
+  background: #1A1D22;
+  border-top: 1px solid #2A2F36;
   padding: 1rem 1.25rem;
 }
 
@@ -362,20 +364,19 @@
 
 .ai-guide-text-input {
   width: 100%;
-  background: #211F2E !important;
-  border: 1px solid #38354F !important;
+  background: #242930 !important;
+  border: 1px solid #2A2F36 !important;
   border-radius: 9999px !important;
   padding: 0.8rem 1.25rem !important;
   font-size: 0.9375rem !important;
-  color: #F9FAFB !important;
+  color: #FFFFFF !important;
   outline: none !important;
   transition: all 0.2s ease !important;
 }
 
 .ai-guide-text-input:focus {
-  border-color: #6E5EF0 !important;
-  background: #252335 !important;
-  box-shadow: 0 0 0 2px rgba(110, 94, 240, 0.25) !important;
+  border-color: #00C16A !important;
+  box-shadow: 0 0 0 2px rgba(0, 193, 106, 0.25) !important;
 }
 
 .ai-guide-text-input::placeholder {
@@ -389,26 +390,26 @@
   justify-content: center;
   gap: 0.4rem;
   padding: 0.8rem 1.4rem;
-  background: #6E5EF0;
+  background: #00C16A;
   border: none;
   border-radius: 9999px;
-  color: #FFFFFF !important;
+  color: #0F1115 !important;
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(110, 94, 240, 0.35);
+  box-shadow: 0 2px 10px rgba(0, 193, 106, 0.3);
 }
 
 .ai-guide-submit-button:hover:not(:disabled) {
-  background: #5B4AE0;
-  box-shadow: 0 6px 16px rgba(110, 94, 240, 0.5);
+  background: #059655;
+  box-shadow: 0 4px 16px rgba(0, 193, 106, 0.4);
   transform: translateY(-1px);
 }
 
 .ai-guide-submit-button:disabled {
-  background: #2A283B;
+  background: #2A2F36;
   color: #6B7280 !important;
   cursor: not-allowed;
   box-shadow: none;

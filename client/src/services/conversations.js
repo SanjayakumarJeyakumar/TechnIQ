@@ -3,24 +3,48 @@ import { supabase } from './supabaseClient'
 export async function fetchConversations() {
   const { data, error } = await supabase.rpc('list_conversations')
   if (error) throw error
-  return data
+  return data || []
 }
 
-/** Just the other member's profile info, for the chat header — cheaper
- * than re-running list_conversations when you already have the id from
- * the URL. */
+/**
+ * Loads the other member's profile information for the chat header safely.
+ * Uses the secure get_public_profile RPC (or public_profiles view fallback)
+ * without violating profile email isolation.
+ */
 export async function fetchConversationInfo(conversationId) {
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Authentication required')
 
   const { data, error } = await supabase
     .from('conversation_members')
-    .select('user_id, profiles(id, name, avatar_url)')
+    .select('user_id')
     .eq('conversation_id', conversationId)
     .neq('user_id', user.id)
     .single()
 
   if (error) throw error
-  return data.profiles
+  if (!data?.user_id) return null
+
+  try {
+    const { data: profileRows, error: profileErr } = await supabase.rpc('get_public_profile', {
+      p_user_id: data.user_id,
+    })
+
+    if (!profileErr && profileRows?.[0]) {
+      return profileRows[0]
+    }
+  } catch (rpcErr) {
+    console.warn('get_public_profile RPC fallback:', rpcErr)
+  }
+
+  // View fallback
+  const { data: viewRow } = await supabase
+    .from('public_profiles')
+    .select('id, name, avatar_url, college_name, department')
+    .eq('id', data.user_id)
+    .single()
+
+  return viewRow || { id: data.user_id, name: 'Student Peer' }
 }
 
 export async function fetchMessages(conversationId, { limit = 50 } = {}) {
@@ -32,16 +56,17 @@ export async function fetchMessages(conversationId, { limit = 50 } = {}) {
     .limit(limit)
 
   if (error) throw error
-  return data
+  return data || []
 }
 
 export async function sendMessage(conversationId, content) {
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Authentication required')
 
   const { data, error } = await supabase
     .from('messages')
     .insert({ conversation_id: conversationId, sender_id: user.id, content: content.trim() })
-    .select()
+    .select('id, conversation_id, sender_id, content, read_at, created_at')
     .single()
 
   if (error) throw error
@@ -50,7 +75,9 @@ export async function sendMessage(conversationId, content) {
 
 export async function markConversationRead(conversationId) {
   const { error } = await supabase.rpc('mark_conversation_read', { p_conversation_id: conversationId })
-  if (error) throw error
+  if (error) {
+    console.warn('markConversationRead warning:', error)
+  }
 }
 
 /**
@@ -63,7 +90,11 @@ export function subscribeToMessages(conversationId, onInsert) {
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-      (payload) => onInsert(payload.new)
+      (payload) => {
+        if (payload?.new) {
+          onInsert(payload.new)
+        }
+      }
     )
     .subscribe()
 

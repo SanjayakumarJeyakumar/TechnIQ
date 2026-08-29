@@ -161,7 +161,7 @@ export default function AIGuide() {
                     onClick={() => handleAsk(item.prompt)}
                   >
                     <span className="ai-guide-starter-icon">{item.icon}</span>
-                    <strong style={{ color: '#C7D2FE', fontSize: '0.8125rem' }}>{item.title}</strong>
+                    <strong style={{ color: '#FFFFFF', fontSize: '0.875rem' }}>{item.title}</strong>
                     <p className="ai-guide-starter-prompt-text">{item.prompt}</p>
                   </button>
                 ))}

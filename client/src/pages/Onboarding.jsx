@@ -12,7 +12,6 @@ import StepSkills from '../components/onboarding/StepSkills'
 import StepTeaching from '../components/onboarding/StepTeaching'
 import StepBio from '../components/onboarding/StepBio'
 import StepReview from '../components/onboarding/StepReview'
-import LoadingSpinner from '../components/LoadingSpinner'
 
 const STEPS = ['welcome', 'basics', 'avatar', 'skills', 'teaching', 'bio', 'review']
 
@@ -36,9 +35,6 @@ export default function Onboarding() {
     avatarFile: null, avatarPreview: '',
   })
 
-  // Load colleges + skill taxonomy, and pre-fill from the profile row that
-  // handle_new_auth_user() already created (name/college may already be
-  // guessed from the Google identity).
   useEffect(() => {
     let mounted = true
     async function load() {
@@ -125,7 +121,7 @@ export default function Onboarding() {
   if (loadingData) {
     return (
       <div style={panelStyle}>
-        <LoadingSpinner label="Setting things up…" />
+        <div className="skeleton" style={{ height: 260, borderRadius: 'var(--radius-lg)' }} />
       </div>
     )
   }
@@ -152,21 +148,18 @@ export default function Onboarding() {
       )}
 
       {submitError && (
-        <p style={{ color: 'var(--danger)', fontSize: 'var(--text-sm)', marginTop: 'var(--sp-3)' }}>
-          {submitError}
+        <p style={{ color: 'var(--danger)', fontSize: 'var(--text-sm)', marginTop: 'var(--sp-3)', fontWeight: 500 }}>
+          ✕ {submitError}
         </p>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--sp-6)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--sp-6)', gap: 'var(--sp-3)' }}>
         <button
           type="button"
           onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
           disabled={stepIndex === 0 || submitting}
-          style={{
-            padding: 'var(--sp-3) var(--sp-5)', background: 'none',
-            border: '1px solid var(--ink-100)', borderRadius: 'var(--radius-md)',
-            color: 'var(--ink-700)', visibility: stepIndex === 0 ? 'hidden' : 'visible',
-          }}
+          className="btn-secondary"
+          style={{ visibility: stepIndex === 0 ? 'hidden' : 'visible' }}
         >
           Back
         </button>
@@ -176,18 +169,18 @@ export default function Onboarding() {
             type="button"
             onClick={() => setStepIndex((i) => Math.min(STEPS.length - 1, i + 1))}
             disabled={!canAdvance()}
-            style={primaryButtonStyle(!canAdvance())}
+            className="btn-brand-primary"
           >
-            Continue
+            Continue →
           </button>
         ) : (
           <button
             type="button"
             onClick={handleFinish}
             disabled={submitting}
-            style={primaryButtonStyle(submitting)}
+            className="btn-brand-primary"
           >
-            {submitting ? 'Saving…' : 'Finish setup'}
+            {submitting ? 'Saving your profile…' : 'Finish setup'}
           </button>
         )}
       </div>
@@ -196,17 +189,10 @@ export default function Onboarding() {
 }
 
 const panelStyle = {
-  background: 'var(--surface-1)', border: '1px solid var(--ink-100)',
-  borderRadius: 'var(--radius-lg)', padding: 'var(--sp-6)', boxShadow: 'var(--shadow-md)',
-  minHeight: 320,
-}
-
-function primaryButtonStyle(disabled) {
-  return {
-    padding: 'var(--sp-3) var(--sp-5)',
-    background: disabled ? 'var(--ink-100)' : 'var(--violet-600)',
-    color: disabled ? 'var(--ink-500)' : '#fff',
-    border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 500,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-  }
+  background: 'var(--surface-1)',
+  border: '1px solid var(--surface-3)',
+  borderRadius: 'var(--radius-xl)',
+  padding: 'var(--sp-6)',
+  boxShadow: 'var(--shadow-lg)',
+  minHeight: 340,
 }

@@ -9,14 +9,36 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.middlew
 const app = express()
 const PORT = process.env.PORT || 4000
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }))
+// Production CORS allowlist configuration
+const rawOrigins = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
+const allowedOrigins = rawOrigins.split(',').map((o) => o.trim()).filter(Boolean)
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like health checks or server-to-server)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        return callback(null, true)
+      }
+      return callback(new Error(`CORS origin not allowed: ${origin}`))
+    },
+    credentials: true,
+  })
+)
+
 app.use(express.json({ limit: '100kb' }))
+
+// Hardened Security Headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  next()
+})
 
 app.use('/api/health', healthRoutes)
 app.use('/api/ai', aiRoutes)
-// Future: /api/search, /api/requests, /api/messages, /api/notifications
-// (only if/when logic outgrows what Supabase RLS + RPC can express directly
-// — see architecture doc §4 for why most CRUD skips this backend entirely)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

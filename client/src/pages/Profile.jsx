@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { updateProfile, uploadAvatar } from '../services/profile'
 import { fetchUserSkillIds, fetchAllSkills, setUserSkills } from '../services/skills'
 import SkillBadge from '../components/SkillBadge'
-import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function Profile() {
   const { profile, user, refreshProfile } = useAuth()
@@ -19,6 +18,7 @@ export default function Profile() {
   const [skills, setSkills] = useState([])
   const [allSkills, setAllSkills] = useState([])
   const [selectedSkillIds, setSelectedSkillIds] = useState([])
+  const [skillSearch, setSkillSearch] = useState('')
 
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -73,7 +73,7 @@ export default function Profile() {
 
   const handleSave = async (e) => {
     e.preventDefault()
-    if (!user?.id) return
+    if (!user?.id || saving) return
 
     setSaving(true)
     setError(null)
@@ -96,7 +96,7 @@ export default function Profile() {
 
       await refreshProfile()
       setIsEditing(false)
-      setMessage('Profile updated successfully.')
+      setMessage('Profile saved successfully.')
     } catch (err) {
       console.error('Failed to update profile:', err)
       setError(err.message || 'Failed to save changes.')
@@ -105,16 +105,29 @@ export default function Profile() {
     }
   }
 
-  const toggleSkill = (skillId) => {
-    setSelectedSkillIds((prev) =>
-      prev.includes(skillId) ? prev.filter((id) => id !== skillId) : [...prev, skillId]
-    )
+  const handleAddSkill = (skillId) => {
+    if (!selectedSkillIds.includes(skillId)) {
+      setSelectedSkillIds((prev) => [...prev, skillId])
+    }
   }
+
+  const handleRemoveSkill = (skillId) => {
+    setSelectedSkillIds((prev) => prev.filter((id) => id !== skillId))
+  }
+
+  const availableFilteredSkills = useMemo(() => {
+    const search = skillSearch.trim().toLowerCase()
+    return allSkills.filter((s) => {
+      if (selectedSkillIds.includes(s.id)) return false
+      if (!search) return true
+      return s.name.toLowerCase().includes(search) || s.category?.toLowerCase().includes(search)
+    })
+  }, [allSkills, selectedSkillIds, skillSearch])
 
   if (!profile) {
     return (
-      <div style={{ padding: 'var(--sp-6) 0' }}>
-        <LoadingSpinner label="Loading your profile…" />
+      <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+        <div className="skeleton" style={{ height: 180, borderRadius: 'var(--radius-xl)' }} />
       </div>
     )
   }
@@ -124,39 +137,51 @@ export default function Profile() {
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
       <div style={{
-        background: 'var(--surface-1)', border: '1px solid var(--ink-100)',
-        borderRadius: 'var(--radius-lg)', padding: 'var(--sp-6)', boxShadow: 'var(--shadow-md)',
+        background: 'var(--surface-1)',
+        border: '1px solid var(--surface-3)',
+        borderRadius: 'var(--radius-xl)',
+        padding: 'var(--sp-6)',
+        boxShadow: 'var(--shadow-md)',
       }}>
-        {/* Profile Header */}
-        <div style={{ display: 'flex', gap: 'var(--sp-4)', alignItems: 'center', marginBottom: 'var(--sp-5)' }}>
+        {/* Profile Header Card */}
+        <div style={{ display: 'flex', gap: 'var(--sp-4)', alignItems: 'center', marginBottom: 'var(--sp-5)', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <div style={{
-              width: 80, height: 80, borderRadius: '50%', flexShrink: 0,
-              background: 'var(--violet-50)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', overflow: 'hidden',
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              flexShrink: 0,
+              background: 'var(--brand-subtle)',
+              border: '2px solid var(--brand-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
             }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--violet-800)' }}>{initial}</span>
+                <span style={{ fontSize: 32, fontWeight: 700, color: 'var(--brand-primary)' }}>{initial}</span>
               )}
             </div>
 
             <label style={{
-              position: 'absolute', bottom: -4, right: -4, background: 'var(--violet-600)',
-              color: '#fff', width: 26, height: 26, borderRadius: '50%',
+              position: 'absolute', bottom: -2, right: -2,
+              background: 'var(--brand-primary)', color: '#0F1115',
+              width: 28, height: 28, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: uploading ? 'wait' : 'pointer', fontSize: 13, boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-            }} title="Change photo">
+              cursor: uploading ? 'wait' : 'pointer', fontSize: 13, fontWeight: 'bold',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+            }} title="Change avatar photo">
               ✎
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} style={{ display: 'none' }} disabled={uploading} />
             </label>
           </div>
 
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
               <div>
-                <h1 style={{ fontSize: 'var(--text-xl)', marginBottom: 2 }}>{profile.name}</h1>
+                <h1 style={{ fontSize: 'var(--text-xl)', marginBottom: 4, color: '#FFFFFF' }}>{profile.name}</h1>
                 <p style={{ color: 'var(--ink-500)', margin: 0, fontSize: 'var(--text-sm)' }}>
                   {[profile.colleges?.name, profile.department, profile.year && `Year ${profile.year}`]
                     .filter(Boolean).join(' · ')}
@@ -164,17 +189,14 @@ export default function Profile() {
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   setIsEditing(!isEditing)
                   setMessage(null)
                   setError(null)
                 }}
-                style={{
-                  padding: 'var(--sp-2) var(--sp-3)', background: isEditing ? 'var(--surface-2)' : 'var(--violet-50)',
-                  color: isEditing ? 'var(--ink-700)' : 'var(--violet-800)', border: 'none',
-                  borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className={isEditing ? 'btn-secondary' : 'btn-brand-primary'}
+                style={{ padding: '6px 14px', height: 34, fontSize: 'var(--text-xs)' }}
               >
                 {isEditing ? 'Cancel Edit' : 'Edit Profile'}
               </button>
@@ -184,8 +206,14 @@ export default function Profile() {
 
         {message && (
           <div style={{
-            padding: 'var(--sp-3) var(--sp-4)', background: 'var(--success-bg)', borderRadius: 'var(--radius-md)',
-            color: 'var(--success)', fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 'var(--sp-4)',
+            padding: 'var(--sp-3) var(--sp-4)',
+            background: 'var(--success-bg)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            color: '#FFFFFF',
+            fontSize: 'var(--text-sm)',
+            fontWeight: 500,
+            marginBottom: 'var(--sp-4)',
           }}>
             ✓ {message}
           </div>
@@ -193,62 +221,81 @@ export default function Profile() {
 
         {error && (
           <div style={{
-            padding: 'var(--sp-3) var(--sp-4)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-md)',
-            color: 'var(--danger)', fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 'var(--sp-4)',
+            padding: 'var(--sp-3) var(--sp-4)',
+            background: 'var(--danger-bg)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            color: '#FFFFFF',
+            fontSize: 'var(--text-sm)',
+            fontWeight: 500,
+            marginBottom: 'var(--sp-4)',
           }}>
             ✕ {error}
           </div>
         )}
 
-        {/* Stats Row */}
+        {/* Statistics Bar */}
         <div style={{
-          display: 'flex', gap: 'var(--sp-5)', padding: 'var(--sp-3) var(--sp-4)',
-          background: 'var(--surface-0)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--sp-5)',
+          display: 'flex',
+          gap: 'var(--sp-4)',
+          padding: 'var(--sp-3) var(--sp-4)',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--surface-3)',
+          borderRadius: 'var(--radius-lg)',
+          marginBottom: 'var(--sp-5)',
+          flexWrap: 'wrap',
         }}>
-          <div>
+          <div style={{ flex: 1, minWidth: 100 }}>
             <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--amber-800)' }}>
-              {profile.students_helped}
+              ★ {profile.students_helped}
             </div>
             <div style={{ color: 'var(--ink-500)', fontSize: 'var(--text-xs)' }}>Students helped</div>
           </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--ink-900)' }}>
+          <div style={{ flex: 1, minWidth: 100 }}>
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: '#FFFFFF' }}>
               {skills.length}
             </div>
-            <div style={{ color: 'var(--ink-500)', fontSize: 'var(--text-xs)' }}>Skills listed</div>
+            <div style={{ color: 'var(--ink-500)', fontSize: 'var(--text-xs)' }}>Skills registered</div>
           </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: profile.can_teach ? 'var(--success)' : 'var(--ink-500)' }}>
-              {profile.can_teach ? 'Available' : 'Paused'}
+          <div style={{ flex: 1, minWidth: 100 }}>
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: profile.can_teach ? 'var(--brand-primary)' : 'var(--ink-500)' }}>
+              {profile.can_teach ? 'Available to teach' : 'Paused'}
             </div>
             <div style={{ color: 'var(--ink-500)', fontSize: 'var(--text-xs)' }}>Teaching status</div>
           </div>
         </div>
 
-        {/* Bio and Edit Form */}
+        {/* View Mode */}
         {!isEditing ? (
           <div>
             {profile.bio && (
               <div style={{ marginBottom: 'var(--sp-5)' }}>
-                <h3 style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-500)', marginBottom: 'var(--sp-1)' }}>About Me</h3>
-                <p style={{ color: 'var(--ink-900)', lineHeight: 1.6, margin: 0 }}>{profile.bio}</p>
+                <h3 style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 'var(--sp-2)' }}>
+                  About Me
+                </h3>
+                <p style={{ color: 'var(--ink-700)', lineHeight: 1.6, margin: 0, fontSize: 'var(--text-base)' }}>
+                  {profile.bio}
+                </p>
               </div>
             )}
 
             <div>
-              <h3 style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-500)', marginBottom: 'var(--sp-2)' }}>My Skills</h3>
+              <h3 style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 'var(--sp-2)' }}>
+                Your Skills ({skills.length})
+              </h3>
               {skills.length === 0 ? (
                 <p style={{ color: 'var(--ink-500)', fontSize: 'var(--text-sm)' }}>No skills selected yet. Click Edit Profile to add skills.</p>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
                   {skills.map((skill) => (
-                    <SkillBadge key={skill.id}>{skill.name}</SkillBadge>
+                    <SkillBadge key={skill.id} emphasized>{skill.name}</SkillBadge>
                   ))}
                 </div>
               )}
             </div>
           </div>
         ) : (
+          /* Edit Form */
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
             <div>
               <label style={labelStyle} htmlFor="edit-name">Display Name</label>
@@ -257,29 +304,29 @@ export default function Profile() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                style={inputStyle}
+                className="input-dark"
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--sp-3)' }}>
-              <div style={{ flex: 2 }}>
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+              <div style={{ flex: '2 1 200px' }}>
                 <label style={labelStyle} htmlFor="edit-dept">Department / Major</label>
                 <input
                   id="edit-dept"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  placeholder="e.g. Computer Science"
-                  style={inputStyle}
+                  placeholder="e.g. Computer Science & Engineering"
+                  className="input-dark"
                 />
               </div>
 
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: '1 1 120px' }}>
                 <label style={labelStyle} htmlFor="edit-year">Year</label>
                 <select
                   id="edit-year"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  style={inputStyle}
+                  className="input-dark"
                 >
                   <option value="">Select year</option>
                   <option value="1">1st Year</option>
@@ -292,74 +339,166 @@ export default function Profile() {
             </div>
 
             <div>
-              <label style={labelStyle} htmlFor="edit-bio">Bio & Experience</label>
+              <label style={labelStyle} htmlFor="edit-bio">Bio & Learning Goals</label>
               <textarea
                 id="edit-bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="What are you currently studying or building? What topics are you excited to share?"
+                placeholder="What topics are you passionate about? What skills are you looking to practice or share?"
                 rows={3}
-                style={{ ...inputStyle, resize: 'vertical' }}
+                className="input-dark"
+                style={{ resize: 'vertical' }}
               />
             </div>
 
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', cursor: 'pointer' }}>
+            <div style={{ background: 'var(--surface-2)', padding: 'var(--sp-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--surface-3)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={canTeach}
                   onChange={(e) => setCanTeach(e.target.checked)}
-                  style={{ width: 18, height: 18 }}
+                  style={{ width: 18, height: 18, accentColor: 'var(--brand-primary)' }}
                 />
-                <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--ink-900)' }}>
-                  I am available to help other students (show me in search results)
+                <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: '#FFFFFF' }}>
+                  I am available to teach/help other students in my college
                 </span>
               </label>
             </div>
 
-            {/* Skill Selector */}
+            {/* Skill Management UI */}
             <div>
-              <label style={labelStyle}>Select Skills You Know</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-1)' }}>
+                <label style={labelStyle}>Your Selected Skills ({selectedSkillIds.length})</label>
+                <span style={{ fontSize: '11px', color: 'var(--ink-500)' }}>Click × to remove</span>
+              </div>
+
+              {selectedSkillIds.length === 0 ? (
+                <div style={{
+                  padding: 'var(--sp-3)',
+                  background: 'var(--surface-2)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px dashed var(--surface-3)',
+                  color: 'var(--ink-500)',
+                  fontSize: 'var(--text-sm)',
+                  marginBottom: 'var(--sp-3)',
+                }}>
+                  No skills selected yet. Search and click skills below to add them.
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 'var(--sp-2)',
+                  padding: 'var(--sp-3)',
+                  background: 'var(--surface-2)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--surface-3)',
+                  marginBottom: 'var(--sp-3)',
+                }}>
+                  {selectedSkillIds.map((id) => {
+                    const skill = allSkills.find((s) => s.id === id)
+                    if (!skill) return null
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => handleRemoveSkill(id)}
+                        title={`Click to remove ${skill.name}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 12px',
+                          borderRadius: 'var(--radius-pill)',
+                          background: 'var(--brand-primary)',
+                          color: '#0F1115',
+                          border: 'none',
+                          fontSize: 'var(--text-xs)',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all var(--dur-fast) var(--ease-out)',
+                        }}
+                      >
+                        <span>{skill.name}</span>
+                        <span style={{ fontSize: 13, fontWeight: 900 }}>×</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Search & Add Skills */}
+              <label style={{ ...labelStyle, marginTop: 'var(--sp-2)' }}>Add Skills to Your Profile</label>
+              <div className="input-icon-wrapper" style={{ marginBottom: 'var(--sp-2)' }}>
+                <svg className="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  value={skillSearch}
+                  onChange={(e) => setSkillSearch(e.target.value)}
+                  placeholder="Search skills to add (e.g. React, Python, UI Design, SQL)…"
+                  className="input-dark"
+                />
+              </div>
+
+              {/* Available skill chips to add */}
               <div style={{
-                maxHeight: 180, overflowY: 'auto', border: '1px solid var(--ink-100)',
-                borderRadius: 'var(--radius-md)', padding: 'var(--sp-3)', background: 'var(--surface-0)',
-                display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)',
+                maxHeight: 180,
+                overflowY: 'auto',
+                border: '1px solid var(--surface-3)',
+                borderRadius: 'var(--radius-md)',
+                padding: 'var(--sp-3)',
+                background: 'var(--surface-2)',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 'var(--sp-2)',
               }}>
-                {allSkills.map((skill) => {
-                  const isSelected = selectedSkillIds.includes(skill.id)
-                  return (
+                {availableFilteredSkills.length === 0 ? (
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', padding: 'var(--sp-2)' }}>
+                    {skillSearch.trim() ? `No additional skills match "${skillSearch}".` : 'All available skills are already added!'}
+                  </span>
+                ) : (
+                  availableFilteredSkills.map((skill) => (
                     <button
                       key={skill.id}
                       type="button"
-                      onClick={() => toggleSkill(skill.id)}
+                      onClick={() => handleAddSkill(skill.id)}
+                      title={`Click to add ${skill.name}`}
                       style={{
-                        padding: 'var(--sp-1) var(--sp-3)',
+                        padding: '4px 12px',
                         borderRadius: 'var(--radius-pill)',
-                        border: isSelected ? '1px solid var(--violet-600)' : '1px solid var(--ink-100)',
-                        background: isSelected ? 'var(--violet-600)' : 'var(--surface-1)',
-                        color: isSelected ? '#fff' : 'var(--ink-900)',
+                        border: '1px solid var(--surface-3)',
+                        background: 'var(--surface-1)',
+                        color: 'var(--ink-700)',
                         fontSize: 'var(--text-xs)',
                         fontWeight: 500,
                         cursor: 'pointer',
+                        transition: 'all var(--dur-fast) var(--ease-out)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--brand-primary)'
+                        e.currentTarget.style.color = '#FFFFFF'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--surface-3)'
+                        e.currentTarget.style.color = 'var(--ink-700)'
                       }}
                     >
-                      {skill.name} {isSelected ? '✓' : '+'}
+                      + {skill.name}
                     </button>
-                  )
-                })}
+                  ))
+                )}
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--sp-3)', marginTop: 'var(--sp-2)' }}>
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', marginTop: 'var(--sp-3)' }}>
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
                 disabled={saving}
-                style={{
-                  flex: 1, padding: 'var(--sp-3) var(--sp-4)',
-                  background: 'var(--surface-2)', color: 'var(--ink-700)',
-                  border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 500,
-                }}
+                className="btn-secondary"
+                style={{ flex: 1 }}
               >
                 Cancel
               </button>
@@ -367,13 +506,8 @@ export default function Profile() {
               <button
                 type="submit"
                 disabled={saving}
-                style={{
-                  flex: 2, padding: 'var(--sp-3) var(--sp-4)',
-                  background: saving ? 'var(--ink-100)' : 'var(--violet-600)',
-                  color: saving ? 'var(--ink-500)' : '#fff',
-                  border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 600,
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                }}
+                className="btn-brand-primary"
+                style={{ flex: 2 }}
               >
                 {saving ? 'Saving changes…' : 'Save Profile'}
               </button>
@@ -385,13 +519,12 @@ export default function Profile() {
   )
 }
 
-const inputStyle = {
-  width: '100%', padding: 'var(--sp-3) var(--sp-4)',
-  border: '1px solid var(--ink-100)', borderRadius: 'var(--radius-md)',
-  fontSize: 'var(--text-base)', background: 'var(--surface-0)', color: 'var(--ink-900)',
-}
-
 const labelStyle = {
-  display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500,
-  color: 'var(--ink-700)', marginBottom: 'var(--sp-1)',
+  display: 'block',
+  fontSize: 'var(--text-xs)',
+  fontWeight: 600,
+  color: 'var(--ink-500)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  marginBottom: 'var(--sp-1)',
 }

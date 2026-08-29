@@ -14,9 +14,15 @@ export default function Modal({ title, children, onClose }) {
       role="presentation"
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(22, 21, 28, 0.5)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 'var(--sp-4)', zIndex: 100,
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--sp-4)',
+        zIndex: 100,
       }}
     >
       <div
@@ -25,17 +31,34 @@ export default function Modal({ title, children, onClose }) {
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'var(--surface-1)', borderRadius: 'var(--radius-lg)',
-          padding: 'var(--sp-6)', width: '100%', maxWidth: 440,
-          boxShadow: 'var(--shadow-md)',
+          background: 'var(--surface-1)',
+          border: '1px solid var(--surface-3)',
+          borderRadius: 'var(--radius-xl)',
+          padding: 'var(--sp-6)',
+          width: 'min(460px, calc(100vw - 32px))',
+          boxShadow: 'var(--shadow-lg)',
+          maxHeight: 'calc(100dvh - 48px)',
+          overflowY: 'auto',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-4)' }}>
-          <h2 style={{ fontSize: 'var(--text-lg)', margin: 0 }}>{title}</h2>
+          <h2 style={{ fontSize: 'var(--text-lg)', margin: 0, color: '#FFFFFF' }}>{title}</h2>
           <button
             onClick={onClose}
-            aria-label="Close"
-            style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--ink-500)', lineHeight: 1, padding: 4 }}
+            aria-label="Close dialog"
+            style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--surface-3)',
+              borderRadius: 'var(--radius-md)',
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 20,
+              color: 'var(--ink-500)',
+              cursor: 'pointer',
+            }}
           >
             ×
           </button>

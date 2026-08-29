@@ -5,7 +5,6 @@ import {
   respondToRequest, cancelRequest,
 } from '../services/requests'
 import RequestCard from '../components/RequestCard'
-import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 
 export default function Requests() {
@@ -77,19 +76,31 @@ export default function Requests() {
   const activeList = tab === 'received' ? received : sent
 
   return (
-    <div style={{ maxWidth: 640 }}>
-      <h1 style={{ fontSize: 'var(--text-xl)' }}>Learning requests</h1>
+    <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+      <div>
+        <h1 style={{ fontSize: 'var(--text-2xl)', color: '#FFFFFF', marginBottom: 'var(--sp-1)' }}>Learning Requests</h1>
+        <p style={{ color: 'var(--ink-500)', fontSize: 'var(--text-base)', margin: 0 }}>
+          Manage structured requests to learn or teach skills with your peers.
+        </p>
+      </div>
 
-      <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-5)' }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 'var(--sp-2)', background: 'var(--surface-1)', padding: 4, borderRadius: 'var(--radius-md)', border: '1px solid var(--surface-3)', width: 'fit-content' }}>
         <TabButton active={tab === 'received'} onClick={() => setTab('received')}>
-          Received{pendingReceivedCount > 0 ? ` (${pendingReceivedCount})` : ''}
+          Received {pendingReceivedCount > 0 && <span style={{ background: 'var(--brand-primary)', color: '#0F1115', padding: '1px 6px', borderRadius: 'var(--radius-pill)', fontSize: '11px', fontWeight: 700, marginLeft: 4 }}>{pendingReceivedCount}</span>}
         </TabButton>
         <TabButton active={tab === 'sent'} onClick={() => setTab('sent')}>
-          Sent
+          Sent ({sent.length})
         </TabButton>
       </div>
 
-      {status === 'loading' && <LoadingSpinner label="Loading requests…" />}
+      {status === 'loading' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="skeleton" style={{ height: 110, borderRadius: 'var(--radius-lg)' }} />
+          ))}
+        </div>
+      )}
 
       {status === 'error' && (
         <EmptyState title="Couldn't load your requests" description="Please try refreshing the page." />
@@ -100,8 +111,8 @@ export default function Requests() {
           title={tab === 'received' ? 'No pending learning requests' : "You haven't sent any requests yet"}
           description={
             tab === 'received'
-              ? 'When someone wants your help with a skill, it will show up here.'
-              : 'Search for a skill and request help from a student to get started.'
+              ? 'When another student from your college requests your help with a skill, it will appear here.'
+              : 'Search for a skill and connect with a peer to get started.'
           }
         />
       )}
@@ -130,11 +141,16 @@ function TabButton({ active, onClick, children }) {
     <button
       onClick={onClick}
       style={{
-        padding: 'var(--sp-2) var(--sp-4)', borderRadius: 'var(--radius-pill)',
-        border: '1px solid ' + (active ? 'var(--violet-600)' : 'var(--ink-100)'),
-        background: active ? 'var(--violet-50)' : 'var(--surface-1)',
-        color: active ? 'var(--violet-800)' : 'var(--ink-700)',
-        fontSize: 'var(--text-sm)', fontWeight: 500,
+        padding: 'var(--sp-2) var(--sp-4)',
+        borderRadius: 'var(--radius-sm)',
+        background: active ? 'var(--surface-3)' : 'transparent',
+        color: active ? '#FFFFFF' : 'var(--ink-500)',
+        fontSize: 'var(--text-sm)',
+        fontWeight: active ? 600 : 500,
+        display: 'inline-flex',
+        alignItems: 'center',
+        transition: 'all var(--dur-fast) var(--ease-out)',
+        cursor: 'pointer',
       }}
     >
       {children}

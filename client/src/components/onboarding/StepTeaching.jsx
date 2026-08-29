@@ -1,21 +1,23 @@
 export default function StepTeaching({ canTeach, setCanTeach }) {
   return (
     <div>
-      <h2 style={{ fontSize: 'var(--text-lg)' }}>Are you willing to teach?</h2>
-      <p>Only students who opt in show up when someone searches for a skill you know.</p>
+      <h2 style={{ fontSize: 'var(--text-lg)', color: '#FFFFFF', marginBottom: 'var(--sp-1)' }}>Are you willing to teach?</h2>
+      <p style={{ color: 'var(--ink-500)', fontSize: 'var(--text-sm)', marginBottom: 'var(--sp-4)' }}>
+        Only students who opt in show up when someone searches for a skill you know.
+      </p>
 
-      <div style={{ display: 'flex', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
+      <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
         <OptionCard
           selected={canTeach === true}
           onClick={() => setCanTeach(true)}
-          title="Yes, I'll teach"
-          description="I'm open to helping other students who want to learn what I know."
+          title="Yes, I'll teach & help"
+          description="I'm open to helping classmates who want to learn skills I have experience with."
         />
         <OptionCard
           selected={canTeach === false}
           onClick={() => setCanTeach(false)}
           title="Not right now"
-          description="I mainly want to learn from others for now. I can change this later."
+          description="I mainly want to find mentors and learn from others for now."
         />
       </div>
     </div>
@@ -28,19 +30,27 @@ function OptionCard({ selected, onClick, title, description }) {
       type="button"
       onClick={onClick}
       style={{
-        flex: 1, textAlign: 'left', padding: 'var(--sp-4)',
-        border: `1.5px solid ${selected ? 'var(--violet-600)' : 'var(--ink-100)'}`,
-        borderRadius: 'var(--radius-md)',
-        background: selected ? 'var(--violet-50)' : 'var(--surface-1)',
+        flex: '1 1 200px',
+        textAlign: 'left',
+        padding: 'var(--sp-4)',
+        border: selected ? '1.5px solid var(--brand-primary)' : '1px solid var(--surface-3)',
+        borderRadius: 'var(--radius-lg)',
+        background: selected ? 'var(--brand-subtle)' : 'var(--surface-2)',
+        cursor: 'pointer',
+        transition: 'all var(--dur-fast) var(--ease-out)',
       }}
     >
       <div style={{
-        fontWeight: 600, fontSize: 'var(--text-base)',
-        color: selected ? 'var(--violet-800)' : 'var(--ink-900)', marginBottom: 4,
+        fontWeight: 700,
+        fontSize: 'var(--text-base)',
+        color: selected ? 'var(--brand-primary)' : '#FFFFFF',
+        marginBottom: 4,
       }}>
-        {title}
+        {title} {selected && '✓'}
       </div>
-      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-500)' }}>{description}</div>
+      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', lineHeight: 1.5 }}>
+        {description}
+      </div>
     </button>
   )
 }

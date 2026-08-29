@@ -1,19 +1,17 @@
 import { supabase } from './supabaseClient'
 
 /**
- * Profiles and user_skills are both readable by any authenticated user (see
- * RLS policies in supabase/migrations/0003), so this is a direct table read
- * rather than an RPC — no special server-side filtering is needed to view
- * one specific profile the way there is for search.
+ * Safely fetches public student profile fields using get_public_profile RPC (0007).
+ * Strictly guarantees that private fields such as email and internal tokens are never retrieved.
  */
 export async function fetchStudentProfile(studentId) {
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, name, avatar_url, department, year, bio, can_teach, students_helped, colleges(name)')
-    .eq('id', studentId)
-    .single()
+  const { data: profileRows, error: profileError } = await supabase.rpc('get_public_profile', {
+    p_user_id: studentId,
+  })
 
   if (profileError) throw profileError
+  const profile = profileRows?.[0]
+  if (!profile) throw new Error('Student profile not found.')
 
   const { data: skillRows, error: skillsError } = await supabase
     .from('user_skills')
@@ -24,8 +22,8 @@ export async function fetchStudentProfile(studentId) {
 
   return {
     ...profile,
-    collegeName: profile.colleges?.name,
-    skills: skillRows.map((row) => row.skills),
+    collegeName: profile.college_name,
+    skills: (skillRows || []).map((row) => row.skills).filter(Boolean),
   }
 }
 
@@ -43,4 +41,3 @@ export async function recordStudentHelped(helperId, skillId) {
   if (error) throw error
   return data
 }
-
