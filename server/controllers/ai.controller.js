@@ -1,4 +1,4 @@
-import { getLearningGuidance } from '../services/anthropic.service.js'
+import { getLearningGuidance } from '../services/gemini.service.js'
 
 export async function postGuide(req, res, next) {
   try {
