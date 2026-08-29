@@ -1,6 +1,10 @@
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 export async function getAIGuidance(skills, prompt, accessToken) {
+  if (!accessToken) {
+    throw new Error('Authentication session is required. Please sign in.')
+  }
+
   const response = await fetch(`${API_BASE}/api/ai/guide`, {
     method: 'POST',
     headers: {
@@ -8,6 +12,7 @@ export async function getAIGuidance(skills, prompt, accessToken) {
       'Authorization': `Bearer ${accessToken}`,
     },
     body: JSON.stringify({ skills, prompt }),
+    signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(45000) : undefined,
   })
 
   if (!response.ok) {
@@ -18,3 +23,4 @@ export async function getAIGuidance(skills, prompt, accessToken) {
   const data = await response.json()
   return data.guidance
 }
+
