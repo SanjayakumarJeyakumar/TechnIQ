@@ -90,7 +90,7 @@ export default function Navbar() {
           </nav>
 
           {/* Right Action Icons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
             <NavLink
               to="/notifications"
               aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
@@ -133,28 +133,28 @@ export default function Navbar() {
               )}
             </NavLink>
 
-            <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} title="Your Profile">
-              <Avatar name={profile?.name} url={profile?.avatar_url} />
-            </NavLink>
-
             <NavLink
               to="/settings"
               aria-label="Settings"
               style={({ isActive }) => ({
-                color: isActive ? 'var(--brand-primary)' : 'var(--ink-500)',
-                display: 'none',
+                color: isActive ? 'var(--brand-primary)' : 'var(--ink-700)',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 borderRadius: 'var(--radius-md)',
-                background: 'var(--surface-2)',
+                background: isActive ? 'var(--brand-subtle)' : 'var(--surface-2)',
                 border: '1px solid var(--surface-3)',
+                transition: 'all var(--dur-fast) var(--ease-out)',
               })}
-              className="desktop-settings-link"
               title="Settings"
             >
               <SettingsIcon />
+            </NavLink>
+
+            <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} title="Your Profile">
+              <Avatar name={profile?.name} url={profile?.avatar_url} />
             </NavLink>
 
             <button
@@ -228,7 +228,7 @@ export default function Navbar() {
 
       <style>{`
         @media (max-width: 768px) {
-          .desktop-nav, .desktop-logout-btn, .desktop-settings-link {
+          .desktop-nav, .desktop-logout-btn {
             display: none !important;
           }
           main.container {
@@ -238,9 +238,6 @@ export default function Navbar() {
         @media (min-width: 769px) {
           .mobile-bottom-nav {
             display: none !important;
-          }
-          .desktop-settings-link {
-            display: flex !important;
           }
         }
       `}</style>

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
   fetchReceivedRequests, fetchSentRequests,
   respondToRequest, cancelRequest,
+  subscribeToRequests,
 } from '../services/requests'
 import RequestCard from '../components/RequestCard'
 import EmptyState from '../components/EmptyState'
@@ -15,26 +16,36 @@ export default function Requests() {
   const [status, setStatus] = useState('loading')
   const [busyId, setBusyId] = useState(null)
 
+  const loadRequests = useCallback(async (showLoading = true) => {
+    if (!user?.id) return
+    if (showLoading) setStatus('loading')
+
+    try {
+      const [r, s] = await Promise.all([
+        fetchReceivedRequests(user.id),
+        fetchSentRequests(user.id),
+      ])
+      setReceived(Array.isArray(r) ? r : [])
+      setSent(Array.isArray(s) ? s : [])
+      setStatus('done')
+    } catch (err) {
+      console.error('Failed to load requests:', err)
+      setStatus('error')
+    }
+  }, [user?.id])
+
   useEffect(() => {
-    if (!user) return
-    let cancelled = false
-    setStatus('loading')
+    loadRequests(true)
 
-    Promise.all([fetchReceivedRequests(user.id), fetchSentRequests(user.id)])
-      .then(([r, s]) => {
-        if (cancelled) return
-        setReceived(r)
-        setSent(s)
-        setStatus('done')
-      })
-      .catch((err) => {
-        if (cancelled) return
-        console.error('Failed to load requests:', err)
-        setStatus('error')
-      })
+    if (!user?.id) return
+    const unsubscribe = subscribeToRequests(user.id, () => {
+      loadRequests(false)
+    })
 
-    return () => { cancelled = true }
-  }, [user])
+    return () => {
+      unsubscribe()
+    }
+  }, [user?.id, loadRequests])
 
   async function handleAccept(id) {
     setBusyId(id)
@@ -73,6 +84,7 @@ export default function Requests() {
   }
 
   const pendingReceivedCount = received.filter((r) => r.status === 'pending').length
+  const pendingSentCount = sent.filter((s) => s.status === 'pending').length
   const activeList = tab === 'received' ? received : sent
 
   return (
@@ -90,7 +102,7 @@ export default function Requests() {
           Received {pendingReceivedCount > 0 && <span style={{ background: 'var(--brand-primary)', color: '#0F1115', padding: '1px 6px', borderRadius: 'var(--radius-pill)', fontSize: '11px', fontWeight: 700, marginLeft: 4 }}>{pendingReceivedCount}</span>}
         </TabButton>
         <TabButton active={tab === 'sent'} onClick={() => setTab('sent')}>
-          Sent ({sent.length})
+          Sent{pendingSentCount > 0 ? ` (${pendingSentCount})` : ''}
         </TabButton>
       </div>
 

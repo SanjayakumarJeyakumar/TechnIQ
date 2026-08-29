@@ -20,10 +20,10 @@ export default function Home() {
     }
 
     setLoading(true)
-    fetchCollegeLeaderboard(profile.college_id)
+    fetchCollegeLeaderboard(profile.college_id, 100)
       .then((data) => {
         if (cancelled) return
-        setLeaderboard(data)
+        setLeaderboard(Array.isArray(data) ? data : [])
         setError(null)
       })
       .catch((err) => {
@@ -41,6 +41,31 @@ export default function Home() {
   function handleSubmit(e) {
     e.preventDefault()
     if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+  }
+
+  const top10 = leaderboard.slice(0, 10)
+  const isUserInTop10 = top10.some((student) => student.id === user?.id)
+
+  let currentUserRankItem = null
+  if (!isUserInTop10 && user?.id) {
+    const userIndex = leaderboard.findIndex((student) => student.id === user.id)
+    if (userIndex !== -1) {
+      currentUserRankItem = {
+        ...leaderboard[userIndex],
+        actualRank: userIndex + 1,
+      }
+    } else if (profile) {
+      currentUserRankItem = {
+        id: user.id,
+        name: profile.name || 'You',
+        avatar_url: profile.avatar_url,
+        department: profile.department,
+        year: profile.year,
+        students_helped: profile.students_helped || 0,
+        skills: profile.skills || [],
+        actualRank: leaderboard.length > 0 ? `${leaderboard.length + 1}+` : '—',
+      }
+    }
   }
 
   return (
@@ -113,7 +138,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* College Leaderboard Section */}
+      {/* College Leaderboard Section (Top 10 + Current User) */}
       <section style={{
         background: 'var(--surface-1)',
         border: '1px solid var(--surface-3)',
@@ -137,7 +162,7 @@ export default function Home() {
               </h2>
             </div>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-500)', margin: 'var(--sp-1) 0 0 0' }}>
-              Recognizing the top peer helpers across your campus.
+              Top 10 peer helpers recognizing active student tutors on campus.
             </p>
           </div>
 
@@ -155,16 +180,16 @@ export default function Home() {
 
         {/* Loading Skeletons */}
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-            {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="skeleton" style={{ height: 68, borderRadius: 'var(--radius-md)' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <div key={n} className="skeleton" style={{ height: 60, borderRadius: 'var(--radius-md)' }} />
             ))}
           </div>
         ) : error ? (
           <div style={{ textAlign: 'center', padding: 'var(--sp-6)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-md)', color: 'var(--danger)' }}>
             <p style={{ margin: 0, fontWeight: 500 }}>{error}</p>
           </div>
-        ) : leaderboard.length === 0 ? (
+        ) : top10.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: 'var(--sp-7) var(--sp-4)',
@@ -187,128 +212,46 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
-            {leaderboard.map((student, index) => {
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {top10.map((student, index) => {
               const isMe = student.id === user?.id
               const rank = index + 1
-              const initial = (student.name || '?').trim().charAt(0).toUpperCase()
-
               return (
-                <div
+                <LeaderboardRow
                   key={student.id}
-                  onClick={() => navigate(isMe ? '/profile' : `/students/${student.id}`)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--sp-3)',
-                    padding: 'var(--sp-3) var(--sp-4)',
-                    background: isMe ? 'rgba(0, 193, 106, 0.08)' : 'var(--surface-2)',
-                    border: isMe ? '1px solid var(--brand-border)' : '1px solid var(--surface-3)',
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    transition: 'all var(--dur-fast) var(--ease-out)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-1px)'
-                    e.currentTarget.style.borderColor = 'var(--brand-primary)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'none'
-                    e.currentTarget.style.borderColor = isMe ? 'var(--brand-border)' : 'var(--surface-3)'
-                  }}
-                >
-                  {/* Rank Indicator */}
-                  <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: 'var(--text-sm)',
-                    background: rank === 1 ? 'rgba(245, 158, 11, 0.2)' : rank === 2 ? 'rgba(229, 231, 235, 0.15)' : rank === 3 ? 'rgba(217, 119, 6, 0.2)' : 'transparent',
-                    color: rank === 1 ? '#FBBF24' : rank === 2 ? '#E5E7EB' : rank === 3 ? '#F59E0B' : 'var(--ink-500)',
-                    flexShrink: 0,
-                  }}>
-                    {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
-                  </div>
-
-                  {/* Student Avatar */}
-                  <div style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    flexShrink: 0,
-                    background: 'var(--brand-subtle)',
-                    border: '1.5px solid var(--surface-3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                  }}>
-                    {student.avatar_url ? (
-                      <img src={student.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontWeight: 700, color: 'var(--brand-primary)', fontSize: 'var(--text-sm)' }}>
-                        {initial}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Student Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-                      <span style={{ fontWeight: 600, fontSize: 'var(--text-base)', color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {student.name}
-                      </span>
-                      {isMe && (
-                        <span style={{
-                          fontSize: '10px',
-                          background: 'var(--brand-primary)',
-                          color: '#0F1115',
-                          padding: '1px 6px',
-                          borderRadius: 'var(--radius-pill)',
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}>
-                          YOU
-                        </span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', margin: '2px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {[student.department, student.year && `Year ${student.year}`].filter(Boolean).join(' · ')}
-                    </p>
-                  </div>
-
-                  {/* Skills preview on desktop/tablet */}
-                  {student.skills.length > 0 && (
-                    <div className="leaderboard-skills" style={{ display: 'none', gap: 'var(--sp-1)', flexWrap: 'wrap', maxWidth: 220 }}>
-                      {student.skills.slice(0, 2).map((s) => (
-                        <SkillBadge key={s.id}>{s.name}</SkillBadge>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Students Helped Counter Badge */}
-                  <div style={{
-                    padding: '4px 12px',
-                    borderRadius: 'var(--radius-pill)',
-                    background: student.students_helped > 0 ? 'var(--amber-50)' : 'var(--surface-3)',
-                    border: student.students_helped > 0 ? '1px solid var(--amber-400)' : '1px solid var(--surface-3)',
-                    flexShrink: 0,
-                  }}>
-                    <span style={{
-                      fontWeight: 700,
-                      fontSize: 'var(--text-xs)',
-                      color: student.students_helped > 0 ? 'var(--amber-800)' : 'var(--ink-500)',
-                    }}>
-                      ★ {student.students_helped} helped
-                    </span>
-                  </div>
-                </div>
+                  student={student}
+                  rank={rank}
+                  isMe={isMe}
+                  onNavigate={() => navigate(isMe ? '/profile' : `/students/${student.id}`)}
+                />
               )
             })}
+
+            {/* Current user ranking row if outside Top 10 */}
+            {currentUserRankItem && (
+              <>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--sp-3)',
+                  margin: '8px 0 4px',
+                }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--surface-3)' }} />
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Your Position
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--surface-3)' }} />
+                </div>
+
+                <LeaderboardRow
+                  key={currentUserRankItem.id}
+                  student={currentUserRankItem}
+                  rank={currentUserRankItem.actualRank}
+                  isMe={true}
+                  onNavigate={() => navigate('/profile')}
+                />
+              </>
+            )}
           </div>
         )}
       </section>
@@ -323,6 +266,147 @@ export default function Home() {
           }
         }
       `}</style>
+    </div>
+  )
+}
+
+function LeaderboardRow({ student, rank, isMe, onNavigate }) {
+  const initial = (student.name || '?').trim().charAt(0).toUpperCase()
+  const displayRank = typeof rank === 'number'
+    ? (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`)
+    : `#${rank}`
+
+  return (
+    <div
+      onClick={onNavigate}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--sp-3)',
+        padding: '10px 14px',
+        background: isMe ? 'rgba(0, 193, 106, 0.08)' : 'var(--surface-2)',
+        border: isMe ? '1px solid var(--brand-border)' : '1px solid var(--surface-3)',
+        borderRadius: 'var(--radius-md)',
+        cursor: 'pointer',
+        transition: 'all var(--dur-fast) var(--ease-out)',
+        boxShadow: isMe ? '0 0 10px rgba(0, 193, 106, 0.1)' : 'none',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-1px)'
+        e.currentTarget.style.borderColor = 'var(--brand-primary)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'none'
+        e.currentTarget.style.borderColor = isMe ? 'var(--brand-border)' : 'var(--surface-3)'
+      }}
+    >
+      {/* Rank Indicator */}
+      <div style={{
+        width: 32,
+        height: 32,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 700,
+        fontSize: 'var(--text-sm)',
+        background: rank === 1
+          ? 'rgba(245, 158, 11, 0.2)'
+          : rank === 2
+            ? 'rgba(229, 231, 235, 0.15)'
+            : rank === 3
+              ? 'rgba(217, 119, 6, 0.2)'
+              : isMe
+                ? 'var(--brand-subtle)'
+                : 'transparent',
+        color: rank === 1
+          ? '#FBBF24'
+          : rank === 2
+            ? '#E5E7EB'
+            : rank === 3
+              ? '#F59E0B'
+              : isMe
+                ? 'var(--brand-primary)'
+                : 'var(--ink-500)',
+        flexShrink: 0,
+      }}>
+        {displayRank}
+      </div>
+
+      {/* Student Avatar */}
+      <div style={{
+        width: 38,
+        height: 38,
+        borderRadius: '50%',
+        flexShrink: 0,
+        background: 'var(--brand-subtle)',
+        border: isMe ? '1.5px solid var(--brand-primary)' : '1.5px solid var(--surface-3)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}>
+        {student.avatar_url ? (
+          <img src={student.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ fontWeight: 700, color: 'var(--brand-primary)', fontSize: 'var(--text-sm)' }}>
+            {initial}
+          </span>
+        )}
+      </div>
+
+      {/* Student Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          <span style={{ fontWeight: 600, fontSize: 'var(--text-base)', color: isMe ? '#FFFFFF' : 'var(--ink-900)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {student.name}
+          </span>
+          {isMe && (
+            <span style={{
+              fontSize: '10px',
+              background: 'var(--brand-primary)',
+              color: '#0F1115',
+              padding: '1px 6px',
+              borderRadius: 'var(--radius-pill)',
+              fontWeight: 700,
+              flexShrink: 0,
+            }}>
+              YOU
+            </span>
+          )}
+        </div>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-500)', margin: '2px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {[student.department, student.year && `Year ${student.year}`].filter(Boolean).join(' · ') || 'Student'}
+        </p>
+      </div>
+
+      {/* Skills preview on desktop/tablet */}
+      {Array.isArray(student.skills) && student.skills.length > 0 && (
+        <div className="leaderboard-skills" style={{ display: 'none', gap: 'var(--sp-1)', flexWrap: 'wrap', maxWidth: 200 }}>
+          {student.skills.slice(0, 2).map((s) => (
+            <SkillBadge key={typeof s === 'string' ? s : s.id || s.name}>
+              {typeof s === 'string' ? s : s.name}
+            </SkillBadge>
+          ))}
+        </div>
+      )}
+
+      {/* Students Helped Counter Badge */}
+      <div style={{
+        padding: '4px 10px',
+        borderRadius: 'var(--radius-pill)',
+        background: (student.students_helped || 0) > 0 ? 'var(--amber-50)' : 'var(--surface-3)',
+        border: (student.students_helped || 0) > 0 ? '1px solid var(--amber-400)' : '1px solid var(--surface-3)',
+        flexShrink: 0,
+      }}>
+        <span style={{
+          fontWeight: 700,
+          fontSize: 'var(--text-xs)',
+          color: (student.students_helped || 0) > 0 ? 'var(--amber-800)' : 'var(--ink-500)',
+        }}>
+          ★ {student.students_helped || 0} helped
+        </span>
+      </div>
     </div>
   )
 }

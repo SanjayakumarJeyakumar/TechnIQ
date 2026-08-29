@@ -86,3 +86,47 @@ export async function cancelRequest(requestId) {
   if (error) throw error
   return data
 }
+
+/**
+ * Subscribes to real-time learning request changes for the user (as sender or receiver).
+ */
+export function subscribeToRequests(userId, onRequestChange) {
+  if (!userId || typeof onRequestChange !== 'function') {
+    return () => {}
+  }
+
+  const channelId = `user-requests-${userId}-${Math.random().toString(36).slice(2, 9)}`
+  const channel = supabase
+    .channel(channelId)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'learning_requests',
+      },
+      (payload) => {
+        try {
+          if (
+            payload?.new?.sender_id === userId ||
+            payload?.new?.receiver_id === userId ||
+            payload?.old?.sender_id === userId ||
+            payload?.old?.receiver_id === userId
+          ) {
+            onRequestChange(payload)
+          }
+        } catch (e) {
+          console.warn('Request listener error:', e)
+        }
+      }
+    )
+    .subscribe()
+
+  return () => {
+    try {
+      supabase.removeChannel(channel)
+    } catch (err) {
+      console.warn('Channel cleanup warning:', err)
+    }
+  }
+}

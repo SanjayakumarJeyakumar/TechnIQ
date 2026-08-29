@@ -5,6 +5,8 @@ import { getAIGuidance } from '../services/ai'
 import LoadingSpinner from '../components/LoadingSpinner'
 import './AIGuide.css'
 
+const STORAGE_KEY = 'techniq_ai_guide_messages'
+
 const STARTER_PROMPTS = [
   {
     icon: '🧭',
@@ -28,12 +30,51 @@ export default function AIGuide() {
   const [skills, setSkills] = useState([])
   const [loadingSkills, setLoadingSkills] = useState(true)
 
-  const [messages, setMessages] = useState([])
+  // Lazily restore messages synchronously from localStorage
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          return parsed
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved AI Guide messages from localStorage:', e)
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      } catch {}
+    }
+    return []
+  })
+
   const [inputValue, setInputValue] = useState('')
   const [isThinking, setIsThinking] = useState(false)
   const [error, setError] = useState(null)
 
   const messagesEndRef = useRef(null)
+  const isMounted = useRef(true)
+
+  useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      if (messages && messages.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
+      } else {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    } catch (e) {
+      console.warn('Failed to save AI Guide messages to localStorage:', e)
+    }
+  }, [messages])
 
   useEffect(() => {
     async function loadSkills() {
@@ -46,11 +87,15 @@ export default function AIGuide() {
           .eq('user_id', user.id)
 
         if (error) throw error
-        setSkills(data?.map((d) => d.skills?.name).filter(Boolean) || [])
+        if (isMounted.current) {
+          setSkills(data?.map((d) => d.skills?.name).filter(Boolean) || [])
+        }
       } catch (err) {
         console.error('Failed to load skills:', err)
       } finally {
-        setLoadingSkills(false)
+        if (isMounted.current) {
+          setLoadingSkills(false)
+        }
       }
     }
 
@@ -63,7 +108,7 @@ export default function AIGuide() {
 
   const handleAsk = async (promptText) => {
     const trimmed = promptText?.trim()
-    if (!trimmed || !session || isThinking) return
+    if (!trimmed || isThinking) return
 
     const now = new Date()
     const userMessage = {
@@ -78,20 +123,53 @@ export default function AIGuide() {
     setIsThinking(true)
 
     try {
-      const guidance = await getAIGuidance(skills, trimmed, session.access_token)
+      // Retrieve a fresh token reliably from session or getSession()
+      let token = session?.access_token
+      if (!token) {
+        const { data: sessionData } = await supabase.auth.getSession()
+        token = sessionData?.session?.access_token
+      }
+
+      if (!token) {
+        throw new Error('Please sign in to ask the AI Guide.')
+      }
+
+      const guidance = await getAIGuidance(skills, trimmed, token)
       const assistantTime = new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: guidance,
-          time: assistantTime,
-        },
-      ])
+      const assistantMessage = {
+        role: 'assistant',
+        content: guidance,
+        time: assistantTime,
+      }
+
+      if (isMounted.current) {
+        setMessages((prev) => [...prev, assistantMessage])
+      } else {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY)
+          const current = saved ? JSON.parse(saved) : []
+          if (Array.isArray(current)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([...current, assistantMessage]))
+          }
+        } catch {}
+      }
     } catch (err) {
-      setError(err.message || 'The AI Guide is unavailable right now. Please try again.')
+      if (isMounted.current) {
+        setError(err.message || 'The AI Guide is unavailable right now. Please try again.')
+      }
     } finally {
-      setIsThinking(false)
+      if (isMounted.current) {
+        setIsThinking(false)
+      }
+    }
+  }
+
+  const handleClearChat = () => {
+    setMessages([])
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch (e) {
+      console.warn('Failed to clear AI Guide messages from localStorage:', e)
     }
   }
 
@@ -138,6 +216,25 @@ export default function AIGuide() {
 
       {/* Main Chat Interface */}
       <div className="ai-guide-card">
+        {/* Chat Header Bar with Clear Chat Action */}
+        {messages.length > 0 && (
+          <div className="ai-guide-card-header">
+            <div className="ai-guide-card-header-left">
+              <SparklesIcon />
+              <span>Conversation</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearChat}
+              className="ai-guide-clear-btn"
+              title="Clear conversation and start a new chat"
+            >
+              <RotateCcwIcon />
+              <span>New Chat</span>
+            </button>
+          </div>
+        )}
+
         <div className="ai-guide-messages-area">
           {messages.length === 0 ? (
             <div className="ai-guide-welcome">
@@ -280,6 +377,15 @@ function SendIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+    </svg>
+  )
+}
+
+function RotateCcwIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
     </svg>
   )
 }
